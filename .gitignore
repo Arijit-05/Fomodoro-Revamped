@@ -1,0 +1,19 @@
+# Gradle and build artifacts
+*.iml
+.gradle/
+local.properties
+.idea/
+.DS_Store
+build/
+app/build/
+.kotlin/
+
+# User-requested ignores
+assets/
+original_fomodoro/
+reference
+
+# Temporary test dumps & test screenshots
+*.png
+*.xml
+scratch/

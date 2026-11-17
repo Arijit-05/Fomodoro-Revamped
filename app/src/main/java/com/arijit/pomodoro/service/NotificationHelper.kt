@@ -91,10 +91,11 @@ class NotificationHelper(
             Phase.LONG_BREAK -> "Long Break"
         }
 
+        val sessionCountText = "Session ${snapshot.cycleState.currentSession} of ${snapshot.cycleState.totalSessions}"
         val contentText = if (snapshot.phase.isBreak && !breakPrompt.isNullOrBlank()) {
-            breakPrompt
+            "$sessionCountText • $breakPrompt"
         } else {
-            "Session ${snapshot.cycleState.currentSession} of ${snapshot.cycleState.totalSessions}"
+            sessionCountText
         }
 
         // Content intent: open app

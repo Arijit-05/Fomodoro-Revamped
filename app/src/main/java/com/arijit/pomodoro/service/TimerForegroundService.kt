@@ -8,6 +8,7 @@ import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationManagerCompat
 import com.arijit.pomodoro.core.datastore.SettingsDataStore
+import com.arijit.pomodoro.core.model.Phase
 import com.arijit.pomodoro.core.model.TimerSnapshot
 import com.arijit.pomodoro.core.model.TimerStatus
 import com.arijit.pomodoro.core.timer.AlarmScheduler
@@ -45,31 +46,11 @@ class TimerForegroundService : Service() {
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private lateinit var alarmScheduler: AlarmScheduler
-    private var progressTickerJob: Job? = null
-
-    private fun startProgressTicker() {
-        progressTickerJob?.cancel()
-        progressTickerJob = serviceScope.launch {
-            while (isActive) {
-                delay(15_000L) // Refresh progress style every 15s while running
-                val currentSnapshot = timerController.state.value
-                val prefs = settingsDataStore.userPreferences.first()
-                if (currentSnapshot.isRunning) {
-                    updateNotification(
-                        snapshot = currentSnapshot,
-                        randomPrompt = prefs.breakPrompts.randomOrNull(),
-                        isUltraFocus = prefs.ultraFocusMode,
-                        liveUpdatesEnabled = prefs.liveUpdatesEnabled
-                    )
-                }
-            }
-        }
-    }
-
-    private fun stopProgressTicker() {
-        progressTickerJob?.cancel()
-        progressTickerJob = null
-    }
+    private var lastTargetEndTime: Long = -1L
+    private var lastSavedStatus: TimerStatus? = null
+    private var lastSavedPhase: Phase? = null
+    private var lastSavedCycleSession: Int = -1
+    private var lastSaveTimeMs: Long = 0L
 
 
     companion object {
@@ -134,9 +115,21 @@ class TimerForegroundService : Service() {
         // Sync Media3 ExoPlayer ambient and ticking audio
         audioEngine.updatePlaybackState(snapshot, preferences)
 
-        // Save snapshot to DataStore for reboot / process-kill recovery
-        serviceScope.launch(Dispatchers.IO) {
-            settingsDataStore.saveSnapshot(snapshot)
+        // Save snapshot to DataStore on status/phase/session change or every 30s
+        val now = System.currentTimeMillis()
+        val shouldSave = snapshot.status != lastSavedStatus ||
+            snapshot.phase != lastSavedPhase ||
+            snapshot.cycleState.currentSession != lastSavedCycleSession ||
+            (now - lastSaveTimeMs > 30_000L)
+
+        if (shouldSave) {
+            lastSavedStatus = snapshot.status
+            lastSavedPhase = snapshot.phase
+            lastSavedCycleSession = snapshot.cycleState.currentSession
+            lastSaveTimeMs = now
+            serviceScope.launch(Dispatchers.IO) {
+                settingsDataStore.saveSnapshot(snapshot)
+            }
         }
 
         val randomPrompt = preferences.breakPrompts.randomOrNull()
@@ -145,34 +138,33 @@ class TimerForegroundService : Service() {
 
         when (snapshot.status) {
             TimerStatus.RUNNING -> {
-                // Schedule or re-arm exact alarm
-                alarmScheduler.scheduleExactAlarm(
-                    targetElapsedRealtime = snapshot.targetEndTimeElapsedRealtime,
-                    targetWallClock = snapshot.targetEndTimeWallClock
-                )
-                startProgressTicker()
+                // Only re-arm exact alarm when target time changes
+                if (snapshot.targetEndTimeElapsedRealtime != lastTargetEndTime) {
+                    lastTargetEndTime = snapshot.targetEndTimeElapsedRealtime
+                    alarmScheduler.scheduleExactAlarm(
+                        targetElapsedRealtime = snapshot.targetEndTimeElapsedRealtime,
+                        targetWallClock = snapshot.targetEndTimeWallClock
+                    )
+                }
                 updateNotification(snapshot, randomPrompt, isUltraFocus, liveUpdatesEnabled)
             }
             TimerStatus.PAUSED -> {
-                // Cancel pending exact alarm while paused
+                lastTargetEndTime = -1L
                 alarmScheduler.cancelExactAlarm()
-                stopProgressTicker()
                 updateNotification(snapshot, randomPrompt, isUltraFocus, liveUpdatesEnabled)
             }
             TimerStatus.PHASE_ENDED -> {
+                lastTargetEndTime = -1L
                 alarmScheduler.cancelExactAlarm()
-                stopProgressTicker()
                 updateNotification(snapshot, randomPrompt, isUltraFocus, liveUpdatesEnabled)
             }
             TimerStatus.IDLE -> {
+                lastTargetEndTime = -1L
                 alarmScheduler.cancelExactAlarm()
-                stopProgressTicker()
-                // Stop service when timer is idle
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
             }
         }
-
     }
 
     private fun updateNotification(
@@ -216,7 +208,6 @@ class TimerForegroundService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        stopProgressTicker()
         audioEngine.release()
         serviceScope.cancel()
     }

@@ -15,13 +15,18 @@ import com.arijit.pomodoro.core.timer.TimerController
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
 
 @AndroidEntryPoint
 class TimerForegroundService : Service() {
@@ -40,6 +45,32 @@ class TimerForegroundService : Service() {
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private lateinit var alarmScheduler: AlarmScheduler
+    private var progressTickerJob: Job? = null
+
+    private fun startProgressTicker() {
+        progressTickerJob?.cancel()
+        progressTickerJob = serviceScope.launch {
+            while (isActive) {
+                delay(15_000L) // Refresh progress style every 15s while running
+                val currentSnapshot = timerController.state.value
+                val prefs = settingsDataStore.userPreferences.first()
+                if (currentSnapshot.isRunning) {
+                    updateNotification(
+                        snapshot = currentSnapshot,
+                        randomPrompt = prefs.breakPrompts.randomOrNull(),
+                        isUltraFocus = prefs.ultraFocusMode,
+                        liveUpdatesEnabled = prefs.liveUpdatesEnabled
+                    )
+                }
+            }
+        }
+    }
+
+    private fun stopProgressTicker() {
+        progressTickerJob?.cancel()
+        progressTickerJob = null
+    }
+
 
     companion object {
         fun startService(context: Context) {
@@ -119,24 +150,29 @@ class TimerForegroundService : Service() {
                     targetElapsedRealtime = snapshot.targetEndTimeElapsedRealtime,
                     targetWallClock = snapshot.targetEndTimeWallClock
                 )
+                startProgressTicker()
                 updateNotification(snapshot, randomPrompt, isUltraFocus, liveUpdatesEnabled)
             }
             TimerStatus.PAUSED -> {
                 // Cancel pending exact alarm while paused
                 alarmScheduler.cancelExactAlarm()
+                stopProgressTicker()
                 updateNotification(snapshot, randomPrompt, isUltraFocus, liveUpdatesEnabled)
             }
             TimerStatus.PHASE_ENDED -> {
                 alarmScheduler.cancelExactAlarm()
+                stopProgressTicker()
                 updateNotification(snapshot, randomPrompt, isUltraFocus, liveUpdatesEnabled)
             }
             TimerStatus.IDLE -> {
                 alarmScheduler.cancelExactAlarm()
+                stopProgressTicker()
                 // Stop service when timer is idle
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
             }
         }
+
     }
 
     private fun updateNotification(
@@ -180,9 +216,11 @@ class TimerForegroundService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        stopProgressTicker()
         audioEngine.release()
         serviceScope.cancel()
     }
+
 
     override fun onBind(intent: Intent?): IBinder? = null
 }

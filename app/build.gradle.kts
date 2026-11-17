@@ -91,7 +91,11 @@ dependencies {
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
 
+    // Lottie Animation
+    implementation(libs.lottie.compose)
+
     // Unit Testing
+
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)

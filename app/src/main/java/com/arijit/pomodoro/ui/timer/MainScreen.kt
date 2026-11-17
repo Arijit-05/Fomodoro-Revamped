@@ -3,9 +3,14 @@ package com.arijit.pomodoro.ui.timer
 import android.app.Activity
 import android.content.res.Configuration
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,47 +24,54 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.NotificationsOff
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.SkipNext
+
+
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.zIndex
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.LottieConstants
+import com.airbnb.lottie.compose.animateLottieCompositionAsState
+import com.airbnb.lottie.compose.rememberLottieComposition
+import com.arijit.pomodoro.R
 import com.arijit.pomodoro.core.model.Phase
-import com.arijit.pomodoro.core.model.TimerStatus
-import com.arijit.pomodoro.system.WakeLockManager
-import com.arijit.pomodoro.ui.components.CircularTimerRing
-import com.arijit.pomodoro.ui.components.SessionDots
-import com.arijit.pomodoro.ui.components.TabularTimerText
-import com.arijit.pomodoro.ui.components.UltraFocusEscapeButton
 
+import com.arijit.pomodoro.system.WakeLockManager
+import com.arijit.pomodoro.ui.components.AmbientSoundSheet
+import com.arijit.pomodoro.ui.components.StackedTimerText
+import com.arijit.pomodoro.ui.components.UltraFocusEscapeButton
+import com.arijit.pomodoro.ui.theme.LocalFomodoroPalette
+import com.arijit.pomodoro.ui.theme.Montserrat
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
     viewModel: TimerViewModel,
@@ -72,9 +84,18 @@ fun MainScreen(
     val snapshot = uiState.snapshot
     val preferences = uiState.preferences
 
+    val palette = LocalFomodoroPalette.current
+    val animatedBgColor by animateColorAsState(
+        targetValue = palette.background,
+        animationSpec = tween(durationMillis = 350),
+        label = "ScreenBgAnimation"
+    )
+
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+
+    var showAmbientSheet by remember { mutableStateOf(false) }
 
     // Lifecycle-aware Keep Screen On (tied to Running focus state, #19)
     DisposableEffect(snapshot.isRunning, snapshot.phase, preferences.keepScreenOn) {
@@ -91,7 +112,7 @@ fun MainScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(animatedBgColor)
     ) {
         // Notification permission banner if denied
         if (!hasNotificationPermission) {
@@ -100,7 +121,8 @@ fun MainScreen(
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .statusBarsPadding()
+                    .padding(horizontal = 16.dp, vertical = 60.dp)
                     .align(Alignment.TopCenter)
             ) {
                 Row(
@@ -119,7 +141,7 @@ fun MainScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Notifications are disabled. Enable to receive background alerts.",
+                            text = "Notifications disabled. Enable for background alerts.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onErrorContainer
                         )
@@ -136,202 +158,324 @@ fun MainScreen(
 
         // Main Timer Body
         if (isLandscape) {
-            LandscapeLayout(
+            LandscapeTimerLayout(
                 uiState = uiState,
                 viewModel = viewModel,
                 modifier = Modifier
                     .fillMaxSize()
                     .statusBarsPadding()
                     .navigationBarsPadding()
-                    .padding(top = 56.dp, start = 24.dp, end = 24.dp, bottom = 16.dp)
+                    .padding(top = 48.dp, start = 16.dp, end = 16.dp, bottom = 8.dp)
             )
         } else {
-            PortraitLayout(
+            PortraitTimerLayout(
                 uiState = uiState,
                 viewModel = viewModel,
                 modifier = Modifier
                     .fillMaxSize()
                     .statusBarsPadding()
                     .navigationBarsPadding()
-                    .padding(top = 64.dp, bottom = 24.dp, start = 24.dp, end = 24.dp)
+                    .padding(top = 56.dp, bottom = 16.dp)
             )
         }
 
-        // Top Bar: Ultra Focus escape button (left) and Settings button (right) - composed LAST so it receives touches
+        // Top Bar: Waveform / Ambient Button (Left) and Settings Button (Right)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .statusBarsPadding()
-                .padding(horizontal = 20.dp, vertical = 8.dp)
+                .padding(horizontal = 24.dp, vertical = 8.dp)
                 .align(Alignment.TopCenter),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Ambient sound button: Lottie animation when playing, static waveform when off
+            val isMusicActuallyPlaying = snapshot.isRunning &&
+                preferences.ambientSoundStyle != "none" &&
+                (!snapshot.phase.isBreak || !preferences.pauseAmbientDuringBreak)
+            val lottieComposition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.music_anim))
+            val lottieProgress by animateLottieCompositionAsState(
+                composition = lottieComposition,
+                isPlaying = isMusicActuallyPlaying,
+                iterations = LottieConstants.IterateForever
+            )
+
+            IconButton(
+                onClick = { showAmbientSheet = true },
+                modifier = Modifier.size(48.dp)
+            ) {
+                if (isMusicActuallyPlaying) {
+                    LottieAnimation(
+                        composition = lottieComposition,
+                        progress = { lottieProgress },
+                        modifier = Modifier.size(34.dp)
+                    )
+                } else {
+                    Icon(
+                        painter = painterResource(R.drawable.music_white),
+                        contentDescription = "Ambient Sound",
+                        tint = palette.topBarWaveColor,
+                        modifier = Modifier.size(30.dp)
+                    )
+                }
+            }
+
+
+            // If Ultra Focus is active, show escape progress button
             if (preferences.ultraFocusMode) {
                 UltraFocusEscapeButton(
                     onExit = viewModel::onExitUltraFocus,
                     hapticManager = viewModel.hapticManager
                 )
-            } else {
-                Spacer(modifier = Modifier.size(48.dp))
             }
 
-            // Settings button: ALWAYS enabled (#53)
+            // Settings button: ALWAYS accessible (#53)
             IconButton(
-                onClick = {
-                    android.util.Log.d("MainScreen", "Settings button tapped!")
-                    onNavigateToSettings()
-                },
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
+                onClick = onNavigateToSettings,
+                modifier = Modifier.size(48.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.Settings,
+                    painter = painterResource(R.drawable.settings),
                     contentDescription = "Settings",
-                    tint = MaterialTheme.colorScheme.onSurface
+                    tint = palette.topBarGearColor,
+                    modifier = Modifier.size(28.dp)
                 )
             }
         }
     }
+
+    // Ambient Sound Modal Bottom Sheet
+    if (showAmbientSheet) {
+        AmbientSoundSheet(
+            currentStyle = preferences.ambientSoundStyle,
+            currentVolume = preferences.ambientVolume,
+            onSelectStyle = { style ->
+                viewModel.setAmbientStyle(style)
+            },
+            onVolumeChange = { vol ->
+                viewModel.setAmbientVolume(vol)
+            },
+            onDismiss = { showAmbientSheet = false }
+        )
+    }
 }
 
 @Composable
-fun PortraitLayout(
+fun PortraitTimerLayout(
     uiState: TimerUiState,
     viewModel: TimerViewModel,
     modifier: Modifier = Modifier
 ) {
     val snapshot = uiState.snapshot
+    val palette = LocalFomodoroPalette.current
 
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        // Phase and session indicators
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = when (snapshot.phase) {
-                    Phase.FOCUS -> "Focus"
-                    Phase.SHORT_BREAK -> "Short Break"
-                    Phase.LONG_BREAK -> "Long Break"
-                },
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
-            )
+        Spacer(modifier = Modifier.height(4.dp))
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            SessionDots(
-                cycleState = snapshot.cycleState,
-                activeColor = MaterialTheme.colorScheme.primary
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = "Session ${snapshot.cycleState.currentSession} of ${snapshot.cycleState.totalSessions}",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            )
-        }
-
-        // Circular Timer Ring with Tabular Countdown Digits
-        CircularTimerRing(
-            progress = snapshot.progress,
-            phase = snapshot.phase,
-            size = 280.dp,
-            strokeWidth = 14.dp
+        // Center Content Block: Pill + Stacked Digits + Controls
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.Center
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                TabularTimerText(
-                    remainingMillis = snapshot.remainingMillis,
-                    textStyle = MaterialTheme.typography.displayLarge
-                )
-
-                // Optional break prompt during breaks (#48)
-                if (snapshot.phase.isBreak && !uiState.currentBreakPrompt.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.height(8.dp))
+            // Top Phase Pill
+            Surface(
+                shape = RoundedCornerShape(50.dp),
+                color = palette.pillBackground,
+                modifier = Modifier.padding(bottom = 8.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 22.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    val iconRes = if (snapshot.phase == Phase.FOCUS) {
+                        R.drawable.brain
+                    } else {
+                        R.drawable.coffee
+                    }
+                    Icon(
+                        painter = painterResource(iconRes),
+                        contentDescription = null,
+                        tint = palette.pillContentColor,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = uiState.currentBreakPrompt,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(horizontal = 24.dp)
+                        text = when (snapshot.phase) {
+                            Phase.FOCUS -> "Focus"
+                            Phase.SHORT_BREAK -> "Short Break"
+                            Phase.LONG_BREAK -> "Long Break"
+                        },
+                        fontFamily = Montserrat,
+                        fontWeight = FontWeight.Normal,
+                        fontSize = 16.sp,
+                        color = palette.pillContentColor
                     )
                 }
             }
+
+            // Stacked 2x2 Digits (Minutes top, Seconds bottom tightly packed)
+            StackedTimerText(
+                remainingMillis = snapshot.remainingMillis,
+                color = palette.digitColor,
+                fontSize = 135.sp
+            )
+
+            // Break prompt if active during break (#48) - cycles calmly every 3s without shifting
+            if (snapshot.phase.isBreak) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(44.dp)
+                        .padding(horizontal = 24.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Crossfade(
+                        targetState = uiState.currentBreakPrompt,
+                        animationSpec = tween(400),
+                        label = "BreakPromptTransition",
+                        modifier = Modifier.fillMaxWidth()
+                    ) { prompt ->
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (!prompt.isNullOrBlank()) {
+                                Text(
+                                    text = prompt,
+                                    fontFamily = Montserrat,
+                                    fontWeight = FontWeight.Normal,
+                                    fontSize = 15.sp,
+                                    color = palette.digitColor.copy(alpha = 0.85f),
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                        }
+                    }
+                }
+            } else {
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Controls Block
+            TimerControls(
+                snapshot = snapshot,
+                viewModel = viewModel
+            )
+
         }
 
-        // Bottom Controls
-        BottomControls(
-            snapshot = snapshot,
-            viewModel = viewModel
+        // Bottom Session Indicator: "1/3"
+        Text(
+            text = "${snapshot.cycleState.currentSession}/${snapshot.cycleState.totalSessions}",
+            fontFamily = Montserrat,
+            fontWeight = FontWeight.Normal,
+            fontSize = 17.sp,
+            color = palette.sessionTextColor,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(bottom = 8.dp)
         )
     }
 }
 
 @Composable
-fun LandscapeLayout(
+fun LandscapeTimerLayout(
     uiState: TimerUiState,
     viewModel: TimerViewModel,
     modifier: Modifier = Modifier
 ) {
     val snapshot = uiState.snapshot
+    val palette = LocalFomodoroPalette.current
 
     Row(
-        modifier = modifier,
+        modifier = modifier.fillMaxSize(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
-        // Left Column: Timer Ring
-        CircularTimerRing(
-            progress = snapshot.progress,
-            phase = snapshot.phase,
-            size = 220.dp,
-            strokeWidth = 10.dp
+        // Left Column: Stacked Digits & Pill (compact for landscape height)
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            TabularTimerText(
+            Surface(
+                shape = RoundedCornerShape(50.dp),
+                color = palette.pillBackground,
+                modifier = Modifier.padding(bottom = 4.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val iconRes = if (snapshot.phase == Phase.FOCUS) R.drawable.brain else R.drawable.coffee
+                    Icon(
+                        painter = painterResource(iconRes),
+                        contentDescription = null,
+                        tint = palette.pillContentColor,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = when (snapshot.phase) {
+                            Phase.FOCUS -> "Focus"
+                            Phase.SHORT_BREAK -> "Short Break"
+                            Phase.LONG_BREAK -> "Long Break"
+                        },
+                        fontFamily = Montserrat,
+                        fontSize = 14.sp,
+                        color = palette.pillContentColor
+                    )
+                }
+            }
+
+            StackedTimerText(
                 remainingMillis = snapshot.remainingMillis,
-                textStyle = MaterialTheme.typography.displayMedium
+                color = palette.digitColor,
+                fontSize = 72.sp
             )
         }
 
-        // Right Column: Info & Controls
+        // Right Column: Controls + Session info
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.Center
         ) {
-            Text(
-                text = when (snapshot.phase) {
-                    Phase.FOCUS -> "Focus"
-                    Phase.SHORT_BREAK -> "Short Break"
-                    Phase.LONG_BREAK -> "Long Break"
-                },
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
-            )
-
-            SessionDots(cycleState = snapshot.cycleState)
-
-            BottomControls(
+            TimerControls(
                 snapshot = snapshot,
                 viewModel = viewModel
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Text(
+                text = "${snapshot.cycleState.currentSession}/${snapshot.cycleState.totalSessions}",
+                fontFamily = Montserrat,
+                fontSize = 15.sp,
+                color = palette.sessionTextColor
             )
         }
     }
 }
 
 @Composable
-fun BottomControls(
+fun TimerControls(
     snapshot: com.arijit.pomodoro.core.model.TimerSnapshot,
-    viewModel: TimerViewModel
+    viewModel: TimerViewModel,
+    modifier: Modifier = Modifier
 ) {
+    val palette = LocalFomodoroPalette.current
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        modifier = modifier
     ) {
         // Phase-ended action bar: Quick snooze (+1, +3, +5 min) and Start Next
         AnimatedVisibility(
@@ -348,61 +492,107 @@ fun BottomControls(
                 Spacer(modifier = Modifier.height(12.dp))
                 Button(
                     onClick = viewModel::onStartNextPhase,
-                    shape = RoundedCornerShape(24.dp)
+                    shape = RoundedCornerShape(24.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = palette.buttonBackground)
                 ) {
-                    Text("Start Next Phase")
+                    Text("Start Next Phase", color = palette.buttonContentColor)
                 }
             }
         }
 
-        // Standard Timer Controls
         if (!snapshot.isPhaseEnded) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(20.dp)
+                horizontalArrangement = Arrangement.Center
             ) {
-                // Reset Button
-                IconButton(
-                    onClick = viewModel::onReset,
-                    modifier = Modifier.size(52.dp)
+                // Restart / Reset Button: on the LEFT (visible when timer is Running or Paused)
+                if (snapshot.isRunning || snapshot.isPaused) {
+                    IconButton(
+                        onClick = viewModel::onReset,
+                        modifier = Modifier.size(52.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.reset_white),
+                            contentDescription = "Restart Timer",
+                            tint = palette.controlIconColor,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                }
+
+                // Main Squircle Play / Pause Button in the center
+                Box(
+                    modifier = Modifier
+                        .size(width = 100.dp, height = 76.dp)
+                        .shadow(elevation = 2.dp, shape = RoundedCornerShape(22.dp))
+                        .clip(RoundedCornerShape(22.dp))
+                        .background(palette.buttonBackground)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = {
+                                if (snapshot.isRunning) {
+                                    viewModel.onPause()
+                                } else if (snapshot.isPaused) {
+                                    viewModel.onResume()
+                                } else {
+                                    viewModel.onStart()
+                                }
+                            }
+                        ),
+                    contentAlignment = Alignment.Center
                 ) {
+                    val iconRes = if (snapshot.isRunning) {
+                        R.drawable.pause_white
+                    } else {
+                        R.drawable.play_white
+                    }
                     Icon(
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = "Reset",
-                        modifier = Modifier.size(28.dp)
+                        painter = painterResource(iconRes),
+                        contentDescription = if (snapshot.isRunning) "Pause" else "Start Timer",
+                        tint = palette.buttonContentColor,
+                        modifier = Modifier.size(30.dp)
                     )
                 }
 
-                // Main Play / Pause Button
-                Button(
-                    onClick = {
-                        if (snapshot.isRunning) viewModel.onPause() else viewModel.onStart()
-                    },
-                    modifier = Modifier.size(76.dp),
-                    shape = CircleShape,
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                ) {
-                    Icon(
-                        imageVector = if (snapshot.isRunning) Icons.Default.Pause else Icons.Default.PlayArrow,
-                        contentDescription = if (snapshot.isRunning) "Pause" else "Start",
-                        modifier = Modifier.size(36.dp),
-                        tint = MaterialTheme.colorScheme.onPrimary
-                    )
+                // Next Button: on the RIGHT (ONLY when timer is Running or Paused, NEVER when Idle!)
+                if (snapshot.isRunning || snapshot.isPaused) {
+                    Spacer(modifier = Modifier.width(16.dp))
+                    IconButton(
+                        onClick = viewModel::onSkip,
+                        modifier = Modifier.size(52.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_skip_next),
+                            contentDescription = "Next Session",
+                            tint = palette.controlIconColor,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
                 }
 
-                // Skip Button
-                IconButton(
-                    onClick = viewModel::onSkip,
-                    modifier = Modifier.size(52.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.SkipNext,
-                        contentDescription = "Skip",
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
+
+            }
+
+            // "Back to timer" text button on break screens
+            if (snapshot.phase.isBreak) {
+                Spacer(modifier = Modifier.height(14.dp))
+                Text(
+                    text = "Back to timer",
+                    fontFamily = Montserrat,
+                    fontWeight = FontWeight.Normal,
+                    fontSize = 18.sp,
+                    color = palette.actionTextColor,
+                    modifier = Modifier
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = viewModel::onSkip
+                        )
+                        .padding(horizontal = 16.dp, vertical = 6.dp)
+                )
             }
         }
     }
 }
-

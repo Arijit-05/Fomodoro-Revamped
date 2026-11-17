@@ -11,10 +11,16 @@ import com.arijit.pomodoro.service.TimerForegroundService
 import com.arijit.pomodoro.system.HapticManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -32,13 +38,39 @@ class TimerViewModel @Inject constructor(
     val hapticManager: HapticManager
 ) : ViewModel() {
 
+    private val currentBreakPromptFlow = MutableStateFlow<String?>(null)
+    private var breakPromptJob: Job? = null
+
+    init {
+        viewModelScope.launch {
+            combine(
+                timerController.state.map { it.phase.isBreak }.distinctUntilChanged(),
+                settingsDataStore.userPreferences.map { it.breakPrompts }.distinctUntilChanged()
+            ) { isBreak, prompts ->
+                Pair(isBreak, prompts)
+            }.collect { (isBreak, prompts) ->
+                breakPromptJob?.cancel()
+                if (isBreak && prompts.isNotEmpty()) {
+                    breakPromptJob = viewModelScope.launch {
+                        var index = 0
+                        while (isActive) {
+                            currentBreakPromptFlow.value = prompts[index % prompts.size]
+                            index++
+                            delay(3000L) // Show each relaxing text for 3 seconds
+                        }
+                    }
+                } else {
+                    currentBreakPromptFlow.value = null
+                }
+            }
+        }
+    }
+
     val uiState: StateFlow<TimerUiState> = combine(
         timerController.state,
-        settingsDataStore.userPreferences
-    ) { snapshot, preferences ->
-        val prompt = if (snapshot.phase.isBreak) {
-            preferences.breakPrompts.randomOrNull()
-        } else null
+        settingsDataStore.userPreferences,
+        currentBreakPromptFlow
+    ) { snapshot, preferences, prompt ->
         TimerUiState(
             snapshot = snapshot,
             preferences = preferences,
@@ -49,6 +81,7 @@ class TimerViewModel @Inject constructor(
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = TimerUiState()
     )
+
 
     fun onStart() {
         hapticManager.start()
@@ -108,5 +141,27 @@ class TimerViewModel @Inject constructor(
             settingsDataStore.setUltraFocusMode(false)
         }
     }
+
+    fun setAmbientStyle(style: String) {
+        viewModelScope.launch {
+            settingsDataStore.setAmbientStyle(style)
+        }
+    }
+
+    fun setAmbientVolume(volume: Float) {
+        viewModelScope.launch {
+            settingsDataStore.setAmbientVolume(volume)
+        }
+    }
+
+
+    fun toggleAmbient() {
+        val currentStyle = uiState.value.preferences.ambientSoundStyle
+        val nextStyle = if (currentStyle == "none") "rain" else "none"
+        viewModelScope.launch {
+            settingsDataStore.setAmbientStyle(nextStyle)
+        }
+    }
 }
+
 

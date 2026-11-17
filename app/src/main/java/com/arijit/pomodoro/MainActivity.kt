@@ -53,12 +53,20 @@ class MainActivity : ComponentActivity() {
                 requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
             }
 
+            val currentPreset = when (snapshot.phase) {
+                com.arijit.pomodoro.core.model.Phase.FOCUS -> preferences.focusThemeColor
+                com.arijit.pomodoro.core.model.Phase.SHORT_BREAK -> preferences.shortBreakThemeColor
+                com.arijit.pomodoro.core.model.Phase.LONG_BREAK -> preferences.longBreakThemeColor
+            }
+
             FomodoroTheme(
                 phase = snapshot.phase,
                 themeMode = preferences.themeMode,
+                presetId = currentPreset,
                 dynamicColor = preferences.dynamicColor,
                 amoledBlack = preferences.amoledBlack
             ) {
+
                 Surface(modifier = Modifier.fillMaxSize()) {
                     FomodoroNavGraph(
                         hasNotificationPermission = hasNotificationPermission,

@@ -12,11 +12,15 @@ data class UserPreferences(
 
     // Appearance
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
-    val dynamicColor: Boolean = true,
+    val dynamicColor: Boolean = false,
     val amoledBlack: Boolean = false,
     val keepScreenOn: Boolean = false,
     val ultraFocusMode: Boolean = false,
     val ambientAodMode: Boolean = false,
+    val focusThemeColor: String = "coral_red",
+    val shortBreakThemeColor: String = "mint_green",
+    val longBreakThemeColor: String = "sky_blue",
+
 
     // Sound
     val endOfFocusSoundUri: String? = null,

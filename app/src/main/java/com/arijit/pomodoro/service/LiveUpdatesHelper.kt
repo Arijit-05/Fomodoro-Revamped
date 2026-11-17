@@ -22,10 +22,7 @@ class LiveUpdatesHelper(private val context: Context) {
     fun canPostLiveUpdate(): Boolean {
         if (Build.VERSION.SDK_INT < 36) return false
         if (isDismissedForCurrentSession) return false
-
-        return runCatching {
-            notificationManager.canPostPromotedNotifications()
-        }.getOrDefault(false)
+        return true
     }
 
     @RequiresApi(36)
@@ -36,14 +33,14 @@ class LiveUpdatesHelper(private val context: Context) {
         if (!canPostLiveUpdate()) return
 
         runCatching {
-            // Meet promotion criteria: promoted ongoing flag
-            builder.setFlag(Notification.FLAG_PROMOTED_ONGOING, true)
+            // Meet promotion criteria: request promoted ongoing (API 36+ runtime)
+            setRequestPromotedOngoingSafe(builder, true)
 
-            // Status bar chip: Compact countdown via chronometer and short critical text (<= 7 chars)
+            // Status bar chip: Compact countdown text / phase name (<= 7 chars)
             val chipText = when {
                 snapshot.isPaused -> "Paused"
                 snapshot.phase == Phase.SHORT_BREAK -> "Break"
-                snapshot.phase == Phase.LONG_BREAK -> "L-Break"
+                snapshot.phase == Phase.LONG_BREAK -> "L-Brk"
                 else -> "Focus"
             }
             builder.setShortCriticalText(chipText)
@@ -56,12 +53,13 @@ class LiveUpdatesHelper(private val context: Context) {
             repeat(totalSessions) { index ->
                 // Focus segment (e.g. 100 units)
                 val focusSegment = Notification.ProgressStyle.Segment(100)
-                    .setColor(0xFFE53935.toInt()) // Red theme
+                    .setColor(0xFFFF7C7C.toInt())
                 progressStyle.addProgressSegment(focusSegment)
 
-                // Break segment (e.g. 30 units for short, 60 for long)
-                val breakLength = if (index == totalSessions - 1) 60 else 30
-                val breakColor = if (index == totalSessions - 1) 0xFF1E88E5.toInt() else 0xFF43A047.toInt()
+                // Break segment
+                val isLast = (index == totalSessions - 1)
+                val breakLength = if (isLast) 60 else 30
+                val breakColor = if (isLast) 0xFF8BCAFF.toInt() else 0xFF8CE8A1.toInt()
                 val breakSegment = Notification.ProgressStyle.Segment(breakLength)
                     .setColor(breakColor)
                 progressStyle.addProgressSegment(breakSegment)
@@ -76,8 +74,20 @@ class LiveUpdatesHelper(private val context: Context) {
             val progressPercent = (snapshot.progress * 100f).toInt().coerceIn(0, 100)
             progressStyle.setProgress(progressPercent)
 
+            runCatching {
+                progressStyle.setProgressTrackerIcon(Icon.createWithResource(context, R.drawable.ic_notification_timer))
+            }
+
             builder.style = progressStyle
+        }.onFailure { e ->
+            android.util.Log.e("LiveUpdatesHelper", "Failed to apply ProgressStyle: ${e.message}", e)
+        }
+    }
+
+    fun setRequestPromotedOngoingSafe(builder: Notification.Builder, promoted: Boolean) {
+        runCatching {
+            val method = builder.javaClass.getMethod("setRequestPromotedOngoing", Boolean::class.javaPrimitiveType)
+            method.invoke(builder, promoted)
         }
     }
 }
-

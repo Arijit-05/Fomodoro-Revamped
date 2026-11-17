@@ -9,7 +9,10 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,12 +20,17 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.PlayArrow
@@ -37,6 +45,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
@@ -46,6 +55,7 @@ import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -61,6 +71,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -69,6 +80,8 @@ import androidx.compose.ui.unit.sp
 import com.arijit.pomodoro.core.datastore.HapticLevel
 import com.arijit.pomodoro.core.datastore.ThemeMode
 import com.arijit.pomodoro.system.BatteryOptimizationHelper
+import com.arijit.pomodoro.ui.theme.SessionColorPresets
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -350,7 +363,7 @@ fun SettingsScreen(
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                         ListItem(
                             headlineContent = { Text("Dynamic Color") },
-                            supportingContent = { Text("Material You system accent color") },
+                            supportingContent = { Text("Override with Material You system accent color") },
                             trailingContent = {
                                 Switch(
                                     checked = preferences.dynamicColor,
@@ -360,10 +373,41 @@ fun SettingsScreen(
                         )
                     }
 
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
+
+                    // Session Background Colors (User selectable 8 palettes)
+                    Text(
+                        text = "Session Background Colors",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(start = 16.dp, top = 12.dp, bottom = 4.dp)
+                    )
+
+                    SessionColorSelector(
+                        title = "Focus Timer Color",
+                        selectedId = preferences.focusThemeColor,
+                        onSelectColor = viewModel::setFocusThemeColor
+                    )
+
+                    SessionColorSelector(
+                        title = "Short Break Color",
+                        selectedId = preferences.shortBreakThemeColor,
+                        onSelectColor = viewModel::setShortBreakThemeColor
+                    )
+
+                    SessionColorSelector(
+                        title = "Long Break Color",
+                        selectedId = preferences.longBreakThemeColor,
+                        onSelectColor = viewModel::setLongBreakThemeColor
+                    )
+
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
+
                     // AMOLED Black
                     ListItem(
                         headlineContent = { Text("AMOLED Pure Black") },
-                        supportingContent = { Text("Pure #000000 background in dark mode") },
+                        supportingContent = { Text("Pure #000000 background in dark mode (off: uses deep session color)") },
                         trailingContent = {
                             Switch(
                                 checked = preferences.amoledBlack,
@@ -371,6 +415,7 @@ fun SettingsScreen(
                             )
                         }
                     )
+
 
                     // Keep Screen Awake (#19)
                     ListItem(
@@ -534,47 +579,64 @@ fun SettingsScreen(
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 12.dp)
                     ) {
-                        Text("Haptic Feedback", style = MaterialTheme.typography.bodyLarge)
+                        Text("Haptic Feedback", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
                         Text(
                             text = "Intensity: ${preferences.hapticLevel.name.lowercase().replaceFirstChar { it.uppercase() }}",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        val hapticOptions = listOf(
+                            Triple(HapticLevel.OFF, "Off", "No vibration or haptic feedback"),
+                            Triple(HapticLevel.SUBTLE, "Subtle", "Gentle tactile taps on buttons"),
+                            Triple(HapticLevel.STANDARD, "Standard", "Balanced vibration for controls and alerts"),
+                            Triple(HapticLevel.STRONG, "Strong", "Pronounced vibration alerts")
+                        )
+
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            ThemeModeButton(
-                                label = "Off",
-                                isSelected = preferences.hapticLevel == HapticLevel.OFF,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                viewModel.setHapticLevel(HapticLevel.OFF)
-                            }
-                            ThemeModeButton(
-                                label = "Subtle",
-                                isSelected = preferences.hapticLevel == HapticLevel.SUBTLE,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                viewModel.setHapticLevel(HapticLevel.SUBTLE)
-                            }
-                            ThemeModeButton(
-                                label = "Std",
-                                isSelected = preferences.hapticLevel == HapticLevel.STANDARD,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                viewModel.setHapticLevel(HapticLevel.STANDARD)
-                            }
-                            ThemeModeButton(
-                                label = "Strong",
-                                isSelected = preferences.hapticLevel == HapticLevel.STRONG,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                viewModel.setHapticLevel(HapticLevel.STRONG)
+                            hapticOptions.forEach { (level, label, desc) ->
+                                val isSelected = preferences.hapticLevel == level
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { viewModel.setHapticLevel(level) }
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        androidx.compose.material3.RadioButton(
+                                            selected = isSelected,
+                                            onClick = { viewModel.setHapticLevel(level) }
+                                        )
+                                        Spacer(modifier = Modifier.width(10.dp))
+                                        Column {
+                                            Text(
+                                                text = label,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                                color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                                            )
+                                            Text(
+                                                text = desc,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
+
 
                     ListItem(
                         headlineContent = { Text("Test Haptics") },
@@ -797,3 +859,64 @@ fun DropdownSelector(
         }
     }
 }
+
+@Composable
+fun SessionColorSelector(
+    title: String,
+    selectedId: String,
+    onSelectColor: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val currentPreset = SessionColorPresets.getPreset(selectedId)
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(title, style = MaterialTheme.typography.bodyMedium)
+            Text(
+                text = currentPreset.name,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
+            )
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            items(SessionColorPresets.presets) { preset ->
+                val isSelected = preset.id == selectedId
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(CircleShape)
+                        .background(preset.primaryColor)
+                        .border(
+                            width = if (isSelected) 3.dp else 1.dp,
+                            color = if (isSelected) MaterialTheme.colorScheme.onSurface else Color.Transparent,
+                            shape = CircleShape
+                        )
+                        .clickable { onSelectColor(preset.id) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (isSelected) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = "Selected",
+                            tint = Color.White,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+

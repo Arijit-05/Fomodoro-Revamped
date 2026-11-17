@@ -1,36 +1,103 @@
 package com.arijit.pomodoro.ui.theme
 
 import androidx.compose.ui.graphics.Color
+import com.arijit.pomodoro.core.model.Phase
 
-// Focus Colors (Red)
-val FocusPrimary = Color(0xFFE53935)
-val FocusOnPrimary = Color(0xFFFFFFFF)
-val FocusPrimaryContainer = Color(0xFFFFDAD6)
-val FocusOnPrimaryContainer = Color(0xFF410002)
-val FocusDarkBackground = Color(0xFF1F1212)
-val FocusLightBackground = Color(0xFFFFF8F7)
+// Fomodoro Signature Brand Colors from Original Design
+val FomodoroLightRed = Color(0xFFFFF2F2)
+val FomodoroMediumRed = Color(0xFFFF7C7C)
+val FomodoroDeepRed = Color(0xFF471515)
 
-// Short Break Colors (Green)
-val ShortBreakPrimary = Color(0xFF2E7D32)
-val ShortBreakOnPrimary = Color(0xFFFFFFFF)
-val ShortBreakPrimaryContainer = Color(0xFFB8F5B7)
-val ShortBreakOnPrimaryContainer = Color(0xFF002204)
-val ShortBreakDarkBackground = Color(0xFF101C11)
-val ShortBreakLightBackground = Color(0xFFF6FBF5)
+val FomodoroLightGreen = Color(0xFFF2FFF5)
+val FomodoroMediumGreen = Color(0xFF8CE8A1)
+val FomodoroDeepGreen = Color(0xFF14401D)
 
-// Long Break Colors (Blue)
-val LongBreakPrimary = Color(0xFF1976D2)
-val LongBreakOnPrimary = Color(0xFFFFFFFF)
-val LongBreakPrimaryContainer = Color(0xFFD2E4FF)
-val LongBreakOnPrimaryContainer = Color(0xFF001C3B)
-val LongBreakDarkBackground = Color(0xFF10161F)
-val LongBreakLightBackground = Color(0xFFF6F8FC)
+val FomodoroLightBlue = Color(0xFFD9EEFF)
+val FomodoroMediumBlue = Color(0xFF8BCAFF)
+val FomodoroDeepBlue = Color(0xFF153047)
 
-// AMOLED Background
+val FomodoroAmoledBlack = Color(0xFF000000)
+val FomodoroWaveformGreen = Color(0xFF2BB696)
+
+// Compatibility fallbacks
+val FocusPrimary = FomodoroMediumRed
+val FocusOnPrimary = Color.White
+val FocusPrimaryContainer = FomodoroLightRed
+val FocusOnPrimaryContainer = FomodoroDeepRed
+val FocusDarkBackground = Color(0xFF241616)
+val FocusLightBackground = FomodoroLightRed
+
+val ShortBreakPrimary = FomodoroMediumGreen
+val ShortBreakOnPrimary = Color.White
+val ShortBreakPrimaryContainer = FomodoroLightGreen
+val ShortBreakOnPrimaryContainer = FomodoroDeepGreen
+val ShortBreakDarkBackground = FomodoroDeepGreen
+val ShortBreakLightBackground = FomodoroLightGreen
+
+val LongBreakPrimary = FomodoroMediumBlue
+val LongBreakOnPrimary = Color.White
+val LongBreakPrimaryContainer = FomodoroLightBlue
+val LongBreakOnPrimaryContainer = FomodoroDeepBlue
+val LongBreakDarkBackground = FomodoroDeepBlue
+val LongBreakLightBackground = FomodoroLightBlue
+
 val AmoledBackground = Color(0xFF000000)
 val AmoledSurface = Color(0xFF121212)
-
-// General Theme Colors
 val NeutralDarkSurface = Color(0xFF1C1B1F)
 val NeutralLightSurface = Color(0xFFFFFBFE)
 
+data class FomodoroPalette(
+    val background: Color,
+    val digitColor: Color,
+    val pillBackground: Color,
+    val pillContentColor: Color,
+    val buttonBackground: Color,
+    val buttonContentColor: Color,
+    val controlIconColor: Color,
+    val topBarWaveColor: Color,
+    val topBarGearColor: Color,
+    val actionTextColor: Color,
+    val sessionTextColor: Color
+)
+
+fun getFomodoroPalette(
+    phase: Phase,
+    isDark: Boolean,
+    presetId: String = when (phase) {
+        Phase.FOCUS -> "coral_red"
+        Phase.SHORT_BREAK -> "mint_green"
+        Phase.LONG_BREAK -> "sky_blue"
+    },
+    amoledBlack: Boolean = false
+): FomodoroPalette {
+    val preset = SessionColorPresets.getPreset(presetId)
+    val bg = when {
+        isDark && amoledBlack -> FomodoroAmoledBlack
+        isDark -> preset.darkBg
+        else -> preset.lightBg
+    }
+    val digitColor = if (isDark) preset.darkText else preset.lightText
+    val pillBg = if (isDark) preset.darkButtonBg else preset.lightText
+    val pillContent = if (isDark) preset.darkButtonContent else Color.White
+    val buttonBg = if (isDark) preset.darkButtonBg else preset.lightButtonBg
+    val buttonContent = if (isDark) preset.darkButtonContent else preset.lightButtonContent
+    val controlIcon = if (isDark) preset.darkControlIcon else preset.lightControlIcon
+    val topBarWave = if (isDark) preset.darkButtonBg else preset.primaryColor
+    val topBarGear = if (isDark) Color.White else preset.lightText
+    val actionText = if (isDark) preset.darkText else preset.lightText
+    val sessionText = if (isDark) preset.darkText else preset.lightText
+
+    return FomodoroPalette(
+        background = bg,
+        digitColor = digitColor,
+        pillBackground = pillBg,
+        pillContentColor = pillContent,
+        buttonBackground = buttonBg,
+        buttonContentColor = buttonContent,
+        controlIconColor = controlIcon,
+        topBarWaveColor = topBarWave,
+        topBarGearColor = topBarGear,
+        actionTextColor = actionText,
+        sessionTextColor = sessionText
+    )
+}

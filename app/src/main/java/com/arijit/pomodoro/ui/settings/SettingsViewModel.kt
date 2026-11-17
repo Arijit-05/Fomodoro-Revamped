@@ -88,6 +88,19 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settingsDataStore.setAmoledBlack(enabled) }
     }
 
+    fun setFocusThemeColor(colorId: String) {
+        viewModelScope.launch { settingsDataStore.setFocusThemeColor(colorId) }
+    }
+
+    fun setShortBreakThemeColor(colorId: String) {
+        viewModelScope.launch { settingsDataStore.setShortBreakThemeColor(colorId) }
+    }
+
+    fun setLongBreakThemeColor(colorId: String) {
+        viewModelScope.launch { settingsDataStore.setLongBreakThemeColor(colorId) }
+    }
+
+
     fun setKeepScreenOn(enabled: Boolean) {
         hapticManager.toggle(enabled)
         viewModelScope.launch { settingsDataStore.setKeepScreenOn(enabled) }

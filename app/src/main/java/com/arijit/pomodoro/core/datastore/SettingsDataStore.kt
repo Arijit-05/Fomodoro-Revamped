@@ -39,6 +39,10 @@ class SettingsDataStore(private val context: Context) {
         val KEY_KEEP_SCREEN_ON = booleanPreferencesKey("keep_screen_on")
         val KEY_ULTRA_FOCUS_MODE = booleanPreferencesKey("ultra_focus_mode")
         val KEY_AMBIENT_AOD_MODE = booleanPreferencesKey("ambient_aod_mode")
+        val KEY_FOCUS_THEME_COLOR = stringPreferencesKey("focus_theme_color")
+        val KEY_SHORT_BREAK_THEME_COLOR = stringPreferencesKey("short_break_theme_color")
+        val KEY_LONG_BREAK_THEME_COLOR = stringPreferencesKey("long_break_theme_color")
+
 
         // Audio
         val KEY_END_FOCUS_SOUND = stringPreferencesKey("end_focus_sound")
@@ -85,11 +89,15 @@ class SettingsDataStore(private val context: Context) {
             autoStartFocus = pref[KEY_AUTO_START_FOCUS] ?: false,
             snoozeDurationMinutes = pref[KEY_SNOOZE_DURATION] ?: 5,
             themeMode = ThemeMode.valueOf(pref[KEY_THEME_MODE] ?: ThemeMode.SYSTEM.name),
-            dynamicColor = pref[KEY_DYNAMIC_COLOR] ?: true,
+            dynamicColor = pref[KEY_DYNAMIC_COLOR] ?: false,
             amoledBlack = pref[KEY_AMOLED_BLACK] ?: false,
             keepScreenOn = pref[KEY_KEEP_SCREEN_ON] ?: false,
             ultraFocusMode = pref[KEY_ULTRA_FOCUS_MODE] ?: false,
             ambientAodMode = pref[KEY_AMBIENT_AOD_MODE] ?: false,
+            focusThemeColor = pref[KEY_FOCUS_THEME_COLOR] ?: "coral_red",
+            shortBreakThemeColor = pref[KEY_SHORT_BREAK_THEME_COLOR] ?: "mint_green",
+            longBreakThemeColor = pref[KEY_LONG_BREAK_THEME_COLOR] ?: "sky_blue",
+
             endOfFocusSoundUri = pref[KEY_END_FOCUS_SOUND],
             endOfBreakSoundUri = pref[KEY_END_BREAK_SOUND],
             tickingSoundStyle = pref[KEY_TICKING_STYLE] ?: "none",
@@ -199,6 +207,19 @@ class SettingsDataStore(private val context: Context) {
         context.dataStore.edit { it[KEY_AMBIENT_AOD_MODE] = enabled }
     }
 
+    suspend fun setFocusThemeColor(color: String) {
+        context.dataStore.edit { it[KEY_FOCUS_THEME_COLOR] = color }
+    }
+
+    suspend fun setShortBreakThemeColor(color: String) {
+        context.dataStore.edit { it[KEY_SHORT_BREAK_THEME_COLOR] = color }
+    }
+
+    suspend fun setLongBreakThemeColor(color: String) {
+        context.dataStore.edit { it[KEY_LONG_BREAK_THEME_COLOR] = color }
+    }
+
+
     suspend fun setLiveUpdatesEnabled(enabled: Boolean) {
         context.dataStore.edit { it[KEY_LIVE_UPDATES_ENABLED] = enabled }
     }
@@ -234,6 +255,20 @@ class SettingsDataStore(private val context: Context) {
             it[KEY_PAUSE_AMBIENT_BREAK] = pauseDuringBreak
         }
     }
+
+    suspend fun setAmbientStyle(style: String) {
+        context.dataStore.edit {
+            it[KEY_AMBIENT_STYLE] = style
+        }
+    }
+
+    suspend fun setAmbientVolume(volume: Float) {
+        context.dataStore.edit {
+            it[KEY_AMBIENT_VOLUME] = volume
+        }
+    }
+
+
 
     suspend fun setBreakPrompts(prompts: List<String>) {
         context.dataStore.edit {

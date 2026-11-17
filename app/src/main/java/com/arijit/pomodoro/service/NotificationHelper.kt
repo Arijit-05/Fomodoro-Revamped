@@ -48,11 +48,11 @@ class NotificationHelper(
 
     fun createNotificationChannels() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            // Channel 1: Ongoing Timer (Silent, LOW importance)
+            // Channel 1: Ongoing Timer (Silent, DEFAULT importance allows status-bar chip promotion)
             val ongoingChannel = NotificationChannel(
                 CHANNEL_ONGOING,
                 "Ongoing Timer",
-                NotificationManager.IMPORTANCE_LOW
+                NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
                 description = "Shows live ongoing timer status"
                 setShowBadge(false)
@@ -60,6 +60,7 @@ class NotificationHelper(
                 enableVibration(false)
                 setSound(null, null)
             }
+
 
             // Channel 2: Phase Complete Alerts (High importance, Heads-up)
             val alertsChannel = NotificationChannel(
@@ -152,7 +153,7 @@ class NotificationHelper(
         )
 
         // Android 16 Live Updates path
-        if (Build.VERSION.SDK_INT >= 36 && liveUpdatesEnabled && liveUpdatesHelper.canPostLiveUpdate()) {
+        if (Build.VERSION.SDK_INT >= 36 && liveUpdatesEnabled && !liveUpdatesHelper.isDismissedForCurrentSession) {
             val nativeBuilder = Notification.Builder(context, CHANNEL_ONGOING)
                 .setContentTitle(title)
                 .setContentText(contentText)
@@ -160,6 +161,9 @@ class NotificationHelper(
                 .setContentIntent(contentIntent)
                 .setDeleteIntent(deleteIntent)
                 .setOngoing(true)
+
+            liveUpdatesHelper.setRequestPromotedOngoingSafe(nativeBuilder, true)
+
 
             if (snapshot.isRunning && snapshot.targetEndTimeWallClock > 0) {
                 nativeBuilder.setWhen(snapshot.targetEndTimeWallClock)

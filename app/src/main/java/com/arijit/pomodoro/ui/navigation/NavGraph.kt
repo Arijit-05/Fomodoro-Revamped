@@ -53,8 +53,13 @@ fun FomodoroNavGraph(
                     viewModel = timerViewModel,
                     onNavigateToSettings = {
                         android.util.Log.d("NavGraph", "onNavigateToSettings invoked!")
-                        navController.navigate("settings")
+                        if (navController.currentDestination?.route != "settings") {
+                            navController.navigate("settings") {
+                                launchSingleTop = true
+                            }
+                        }
                     },
+
                     hasNotificationPermission = hasNotificationPermission,
                     onRequestNotificationPermission = onRequestNotificationPermission
                 )

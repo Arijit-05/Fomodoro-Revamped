@@ -9,9 +9,7 @@ app/build/
 .kotlin/
 
 # User-requested ignores
-assets/*
-!assets/branding/
-!assets/screenshots/
+assets/
 original_fomodoro/
 reference
 

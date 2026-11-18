@@ -11,6 +11,7 @@ app/build/
 # User-requested ignores
 assets/*
 !assets/branding/
+!assets/screenshots/
 original_fomodoro/
 reference
 

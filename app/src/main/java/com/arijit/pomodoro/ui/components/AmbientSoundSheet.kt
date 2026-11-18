@@ -41,8 +41,7 @@ val ambientTracks = listOf(
     AmbientTrack("ocean", "Ocean Waves"),
     AmbientTrack("fireplace", "Cozy Fireplace"),
     AmbientTrack("brown_noise", "Soothing Brown Noise"),
-    AmbientTrack("cafe", "Cafe Ambience"),
-    AmbientTrack("clock", "Clock Ticking")
+    AmbientTrack("cafe", "Cafe Ambience")
 )
 
 @OptIn(ExperimentalMaterial3Api::class)

@@ -121,9 +121,9 @@ All audio bundled in `app/src/main/res/raw/` is **100% CC0 Royalty-Free** synthe
 | `ambient_forest.wav` | Ambient Loop | Gentle woodland canopy atmosphere | CC0 Public Domain |
 | `ambient_fireplace.wav` | Ambient Loop | Warm hearth crackle and ambient rumble | CC0 Public Domain |
 | `ambient_cafe.wav` | Ambient Loop | Subtle diffused coffee-shop ambient murmur | CC0 Public Domain |
-| `tick_mechanical.wav` | Ticking Beat | Crisp analog clock pendulum escapement | CC0 Public Domain |
-| `tick_digital.wav` | Ticking Beat | High-frequency digital pulse | CC0 Public Domain |
-| `tick_soft.wav` | Ticking Beat | Subdued acoustic woodblock tick | CC0 Public Domain |
+| `tick_classic.mp3` | Ticking Beat | Authentic classic analog clock tick | CC0 Public Domain |
+| `tick_mechanical.mp3` | Ticking Beat | Crisp analog clock pendulum escapement | CC0 Public Domain |
+| `tick_soft.mp3` | Ticking Beat | Subdued acoustic gentle tick | CC0 Public Domain |
 | `chime_focus_end.wav` | Completion Chime | Dual-tone ascending bell (523 Hz -> 659 Hz) | CC0 Public Domain |
 | `chime_break_end.wav` | Completion Chime | Triple-tone descending melodic chime | CC0 Public Domain |
 

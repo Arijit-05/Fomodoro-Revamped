@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Tomato Body: Warm Coral Red -->
+    <path
+        android:fillColor="#FF6550"
+        android:pathData="M 54,41 C 63,41 74,45 78.5,53 C 82,60 81.5,70 75,76.5 C 70,80.5 61,81.5 54,81.5 C 47,81.5 38,80.5 33,76.5 C 26.5,70 26,60 29.5,53 C 34,45 45,41 54,41 Z" />
+
+    <!-- Soft Cheeks: Blush Coral with soft opacity -->
+    <path
+        android:fillColor="#FFA08A"
+        android:fillAlpha="0.85"
+        android:pathData="M 36.5,62.5 m -4.2,0 a 4.2,4.2 0 1,0 8.4,0 a 4.2,4.2 0 1,0 -8.4,0" />
+    <path
+        android:fillColor="#FFA08A"
+        android:fillAlpha="0.85"
+        android:pathData="M 71.5,62.5 m -4.2,0 a 4.2,4.2 0 1,0 8.4,0 a 4.2,4.2 0 1,0 -8.4,0" />
+
+    <!-- Eyes: Deep Espresso Charcoal -->
+    <path
+        android:fillColor="#2A1E1E"
+        android:pathData="M 44.5,56.5 m -2.7,0 a 2.7,2.7 0 1,0 5.4,0 a 2.7,2.7 0 1,0 -5.4,0" />
+    <path
+        android:fillColor="#2A1E1E"
+        android:pathData="M 63.5,56.5 m -2.7,0 a 2.7,2.7 0 1,0 5.4,0 a 2.7,2.7 0 1,0 -5.4,0" />
+
+    <!-- Cheerful Smile Arc -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#2A1E1E"
+        android:strokeWidth="2.2"
+        android:strokeLineCap="round"
+        android:pathData="M 48.5,62 C 50.5,67 57.5,67 59.5,62" />
+
+    <!-- Leaf Crown & Stem: Fresh Green -->
+    <path
+        android:fillColor="#5E9E68"
+        android:pathData="M 54,43 C 49,43.5 40,46.5 35,45 C 33.5,44 34.5,41.5 37,40 C 42,37 47,39 50,40 C 47,36 39,31 41,28 C 42.5,26.5 45,28 48,32 C 50.5,35 51.5,38 52.5,40 C 52.5,34 53,26 58,24 C 60,23.5 60.5,26 58.5,28.5 C 56.5,31 55.5,36 55.5,40 C 57.5,37 63,30 66,31 C 67.5,31.5 67,34.5 63,37 C 60,39 57,40 56,41 C 60,40.5 69,42.5 72,44.5 C 73,46 71.5,47.5 68,46.5 C 63,45 57,43.5 54,43 Z" />
+</vector>

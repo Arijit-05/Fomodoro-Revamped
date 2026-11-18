@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Fomodoro</string>
+
+    <!-- Phases -->
+    <string name="phase_focus">Focus</string>
+    <string name="phase_short_break">Short Break</string>
+    <string name="phase_long_break">Long Break</string>
+
+    <!-- Timer Controls -->
+    <string name="action_start">Start</string>
+    <string name="action_pause">Pause</string>
+    <string name="action_resume">Resume</string>
+    <string name="action_skip">Skip</string>
+    <string name="action_reset">Reset</string>
+    <string name="action_snooze">+%d min</string>
+    <string name="action_start_next">Start Next</string>
+    <string name="action_exit_ultra_focus">Exit Ultra Focus</string>
+
+    <!-- Session Display -->
+    <string name="session_format">Session %1$d of %2$d</string>
+    <string name="cycle_completed">Cycle Completed!</string>
+
+    <!-- Notification Titles and Messages -->
+    <string name="notification_channel_ongoing">Ongoing Timer</string>
+    <string name="notification_channel_ongoing_desc">Shows live ongoing timer status</string>
+    <string name="notification_channel_alerts">Phase Complete Alerts</string>
+    <string name="notification_channel_alerts_desc">Alerts when a focus session or break completes</string>
+
+    <string name="notification_focus_complete_title">Focus Session Complete!</string>
+    <string name="notification_focus_complete_desc">Great job! Time to take a break.</string>
+    <string name="notification_break_complete_title">Break Complete!</string>
+    <string name="notification_break_complete_desc">Ready to focus again? Let\'s go.</string>
+
+    <!-- Battery & OEM guidance -->
+    <string name="battery_guidance_title">Background Reliability</string>
+    <string name="battery_guidance_desc">To ensure timers and phase alarms alert reliably when the screen is locked, disable battery optimization and enable autostart.</string>
+    <string name="battery_guidance_action">Optimize Settings</string>
+    <string name="battery_guidance_dont_kill">Learn more on Don\'t Kill My App</string>
+</resources>
+

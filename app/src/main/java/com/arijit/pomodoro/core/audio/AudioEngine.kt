@@ -118,10 +118,10 @@ class AudioEngine(private val context: Context) {
         currentTickingStyle = style
 
         val rawRes = when (style) {
+            "classic" -> R.raw.tick_classic
             "mechanical" -> R.raw.tick_mechanical
-            "digital" -> R.raw.tick_digital
             "soft" -> R.raw.tick_soft
-            else -> R.raw.tick_mechanical
+            else -> R.raw.tick_classic
         }
 
         val mediaItem = MediaItem.fromUri(getRawUri(rawRes))

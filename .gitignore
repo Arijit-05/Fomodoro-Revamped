@@ -9,12 +9,13 @@ app/build/
 .kotlin/
 
 # User-requested ignores
-assets/
+assets/*
+!assets/branding/
 original_fomodoro/
 reference
 
-# Temporary test dumps & test screenshots
-*.png
-*.xml
+# Temporary test dumps & test screenshots in root
+/*.png
+/*.xml
 scratch/
 

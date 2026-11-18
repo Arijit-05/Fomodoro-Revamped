@@ -25,7 +25,7 @@ data class UserPreferences(
     // Sound
     val endOfFocusSoundUri: String? = null,
     val endOfBreakSoundUri: String? = null,
-    val tickingSoundStyle: String = "none", // none, mechanical, digital, soft
+    val tickingSoundStyle: String = "none", // none, classic, mechanical, soft
     val tickingVolume: Float = 0.5f,
     val tickOnlyDuringFocus: Boolean = true,
     val ambientSoundStyle: String = "none", // none, rain, forest, ocean, fireplace, brown_noise, cafe, custom

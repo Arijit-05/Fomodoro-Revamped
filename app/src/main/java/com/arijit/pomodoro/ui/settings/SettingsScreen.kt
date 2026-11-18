@@ -530,7 +530,7 @@ fun SettingsScreen(
                     Text("Ticking Sound", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    val tickingOptions = listOf("none", "mechanical", "digital", "soft")
+                    val tickingOptions = listOf("none", "classic", "mechanical", "soft")
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,

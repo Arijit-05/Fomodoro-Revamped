@@ -7,40 +7,45 @@
 [![Media3](https://img.shields.io/badge/Media3-ExoPlayer%201.5.1-orange.svg)](https://developer.android.com/media/media3)
 [![License: CC0](https://img.shields.io/badge/Audio%20License-CC0%20Royalty--Free-lightgrey.svg)](https://creativecommons.org/publicdomain/zero/1.0/)
 
-**Fomodoro Revamped** (`com.arijit.pomodoro`) is a modern, high-precision Pomodoro timer for Android, built from the ground up to achieve 100% background reliability, drift-free timekeeping across process death and Doze mode, Android 16 Live Updates, and an expressive Material 3 user interface.
+**Fomodoro Revamped** (`com.arijit.pomodoro`) is a modern, high-precision Pomodoro timer for Android, built from the ground up to achieve 100% background reliability, drift-free timekeeping across process death and Doze mode, Android 16 Live Updates, and an expressive Material 3 user interface. This is a remake of the original Fomodoro app: https://www.github.com/Arijit-05/Fomodoro
+
+---
+
+## Screenshots
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/4879c4e9-63d6-4ccc-9760-2fc143a2519b" alt="Fomodoro main timer screen" width="240" />
+  <img src="https://github.com/user-attachments/assets/11901bd1-f207-4c83-89b1-bd6e46048b4e" alt="Fomodoro screen 4" width="240" />
+  <img src="https://github.com/user-attachments/assets/a726d49f-ebbb-4700-a728-444d229b00cd" alt="Fomodoro screen 5" width="240" />
+</p>
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/9b9f7474-d3e9-4d7b-a001-fffc8d8ea405" alt="Fomodoro screen 6" width="240" />
+  <img src="https://github.com/user-attachments/assets/e06a60dc-35ad-4d0a-95fd-2cecf24c9fb8" alt="Fomodoro screen 7" width="240" />
+  <img src="https://github.com/user-attachments/assets/ce7ddf4f-a258-4134-b16f-bd3a1595bf29" alt="Fomodoro screen 8" width="240" />
+</p>
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/f371d37e-8dac-44e0-b445-09e3e69238e6" alt="Fomodoro screen 9" width="240" />
+  <img src="https://github.com/user-attachments/assets/e4e53a26-9d96-413a-8e10-a9ceeec995a2" alt="Fomodoro screen 10" width="240" />
+  <img src="https://github.com/user-attachments/assets/dd3a1284-64f4-4843-b035-7ac16fb00286" alt="Fomodoro screen 11" width="240" />
+</p>
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/0739a738-e52c-4586-a473-62430bf9e956" alt="Fomodoro screen 12" width="240" />
+  <img src="https://github.com/user-attachments/assets/2a875e46-8342-45d5-9cc4-65e43e009506" alt="Fomodoro screen 13" width="240" />
+</p>
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/aa85bbd3-bbe7-402d-b06a-794c4adcd231" alt="Fomodoro compact screenshot 2" width="360" />
+  <img src="https://github.com/user-attachments/assets/a77d2701-31af-49fd-b7c8-01716cb85a34" alt="Fomodoro compact screenshot 3" width="360" />
+</p>
 
 ---
 
 ## 1. Architecture & Tech Stack
 
 Fomodoro Revamped is engineered following modern Android architecture best practices with **Unidirectional Data Flow (UDF)** and strict separation of concerns:
-
-```
-┌────────────────────────────────────────────────────────────────────────┐
-│                               Presentation                             │
-│   Jetpack Compose (Material 3 Expressive) • Edge-to-Edge • Predictive Back│
-│   MainScreen • SettingsScreen • AodScreen • Components & Custom Canvas │
-└─────────────────────────────────┬──────────────────────────────────────┘
-                                  │ StateFlow<TimerUiState> / Intents
-┌─────────────────────────────────▼──────────────────────────────────────┐
-│                               View Layer                               │
-│            TimerViewModel              SettingsViewModel               │
-└──────────────────┬───────────────────────────────┬─────────────────────┘
-                   │                               │
-┌──────────────────▼───────────────────────────────▼─────────────────────┐
-│                             Domain & Core                              │
-│   TimerController (Pure State Machine • Injectable Clock • Single Source)│
-│   AudioEngine (Media3 ExoPlayer • AudioFocus • Ambient Loops & Ticking)│
-│   PhaseAlertManager (Crash-Proof Isolated Side Effects Runner)        │
-└──────────────────┬───────────────────────────────┬─────────────────────┘
-                   │                               │
-┌──────────────────▼───────────────────────────────▼─────────────────────┐
-│                            System & Data                               │
-│  TimerForegroundService (mediaPlayback | specialUse) • Exact Alarms    │
-│  LiveUpdatesHelper (API 36 ProgressStyle) • Haptic & Torch Blinker     │
-│  Room Database (Session History) • DataStore (Preferences & Restores)  │
-└────────────────────────────────────────────────────────────────────────┘
-```
 
 - **Language & Runtime**: Kotlin 2.0.21, Coroutines, Flow.
 - **UI Framework**: Jetpack Compose 2024.11.00 BOM, Material 3, dynamic theming, pure AMOLED black mode.
@@ -52,33 +57,7 @@ Fomodoro Revamped is engineered following modern Android architecture best pract
 
 ---
 
-## 2. Timer Core & Mathematical Accuracy
-
-### The Drift-Free Problem
-Legacy timer implementations frequently rely on `CountDownTimer` or periodic `Handler.postDelayed(1000)` ticks. Under Android Doze mode, CPU throttling, screen sleep, and garbage collection pauses, periodic ticks drift by seconds or tens of seconds, and die completely if the process is reclaimed.
-
-### The Absolute Time Solution
-Fomodoro Revamped never treats decrementing counters as the source of truth. When a phase starts or resumes, it calculates and persists two immutable target timestamps and the system boot count:
-
-1. **Monotonic Realtime Target**:
-   $$\tau_{\text{target\_elapsed}} = \text{SystemClock.elapsedRealtime}() + \Delta t_{\text{remaining}}$$
-2. **Wall-Clock Target**:
-   $$\tau_{\text{target\_wall}} = \text{System.currentTimeMillis}() + \Delta t_{\text{remaining}}$$
-3. **Boot Count**:
-   $$B_{\text{saved}} = \text{Settings.Global.getInt}(\text{BOOT\_COUNT})$$
-
-### Remaining Time Formula
-At any instant $t$, the remaining time is derived deterministically:
-- **Same Boot Cycle** ($B_{\text{current}} = B_{\text{saved}}$):
-  $$t_{\text{remaining}} = \max\left(0, \tau_{\text{target\_elapsed}} - \text{SystemClock.elapsedRealtime}()\right)$$
-- **Post-Reboot Recovery** ($B_{\text{current}} \neq B_{\text{saved}}$):
-  $$t_{\text{remaining}} = \max\left(0, \tau_{\text{target\_wall}} - \text{System.currentTimeMillis}()\right)$$
-
-This guarantees mathematical precision across screen-off, rotation, deep Doze, process death, and device restarts.
-
----
-
-## 3. Background Execution & Reliability
+## 2. Background Execution & Reliability
 
 Fomodoro Revamped employs a multi-tiered background execution strategy that survives aggressive OEM battery killers:
 
@@ -97,7 +76,7 @@ Fomodoro Revamped employs a multi-tiered background execution strategy that surv
 
 ---
 
-## 4. Android 16 Live Updates Progressive Enhancement
+## 3. Android 16 Live Updates Progressive Enhancement
 
 On Android 16+ (API 36 / 37), Fomodoro Revamped elevates ongoing timer notifications into platform-level Live Updates:
 
@@ -109,7 +88,7 @@ On Android 16+ (API 36 / 37), Fomodoro Revamped elevates ongoing timer notificat
 
 ---
 
-## 5. Audio Assets & CC0 License
+## 4. Audio Assets & CC0 License
 
 All audio bundled in `app/src/main/res/raw/` is **100% CC0 Royalty-Free** synthesized procedural audio, authored directly for Fomodoro Revamped. No third-party copyrighted samples are used.
 
@@ -131,7 +110,9 @@ Users may also import their own ambient audio loops and ringtones using the Stor
 
 ---
 
-## 6. Complete Issue-to-Fix Matrix
+## 5. Complete Issue-to-Fix Matrix
+
+(From the original Fomodoro issues)
 
 | Issue | Category | Original Root Cause (Files & Lines) | Revamped Fix |
 | :--- | :--- | :--- | :--- |
@@ -152,17 +133,3 @@ Users may also import their own ambient audio loops and ringtones using the Stor
 | **#46** | Platform | Incompatible with Android 14/15/16 background restrictions. | TargetSdk 36 compliance: dual foreground service types, edge-to-edge support, predictive back, Android 16 Live Updates. |
 | **#47** | Polish | Hardcoded English strings throughout UI. | Zero hardcoded strings. All user-facing strings centralized in `strings.xml`. Locales config in `res/xml/locales_config.xml` and complete `TRANSLATING.md`. |
 | **#24** | Polish | Outdated launcher icons. | Modern adaptive launcher icon with monochrome layer (`ic_launcher_monochrome.xml`) and themed status bar notification icon. |
-
----
-
-## 7. Device Verification Summary
-
-All verification scenarios were executed and confirmed on a physical test device running **Android 17 (SDK 37)** (`ZD223BBWTX`):
-
-- **Live Updates & Chronometer**: Verified `Notification.ProgressStyle` segments, boundary points, and status chip countdowns in `dumpsys notification`.
-- **Doze Mode & Exact Alarms**: Verified `AlarmManager` wakeups in `dumpsys alarm` with `ALLOW_WHILE_IDLE` under deep idle (`dumpsys deviceidle force-idle`).
-- **Foreground Service Survival**: Verified `TimerForegroundService` survives swiping from Android Recents and screen locks with `FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK | FOREGROUND_SERVICE_TYPE_SPECIAL_USE`.
-- **Process Death & Reboot Restoration**: Verified zero-drift countdown recovery via wall-clock and boot count mathematics upon process termination (`am kill`).
-- **Notification Actions**: Verified Pause, Resume, Skip, +Snooze, and Exit Ultra Focus from notification shade with the app in the background.
-- **Unit Test Suite**: All 16 unit tests in `:app:testDebugUnitTest` and `:app:testReleaseUnitTest` passed with 100% success rate.
-
